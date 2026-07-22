@@ -1,0 +1,5 @@
+# gRPC dependencies (only needed for the grpc/ implementation)
+grpcio>=1.60.0
+grpcio-tools>=1.60.0
+
+# socket/ implementation uses only Python stdlib — no extra packages needed

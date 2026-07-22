@@ -1,0 +1,56 @@
+// ============================================================
+//  Distributed Systems Assignment
+//  Protocol Buffer Definition for gRPC Chat Service
+// ============================================================
+//  Protocol Buffers (protobuf) is Google's language-neutral,
+//  platform-neutral mechanism for serializing structured data.
+//  This file defines:
+//    - The data structures (messages) exchanged between nodes
+//    - The service interface (RPCs) the server exposes
+//
+//  After editing this file, regenerate Python stubs with:
+//    python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. chat.proto
+// ============================================================
+
+syntax = "proto3";
+
+package chat;
+
+// ── Message Types ────────────────────────────────────────
+
+// A single chat message sent by a user
+message ChatMessage {
+  string username  = 1;   // Who sent the message
+  string content   = 2;   // The message body
+  string timestamp = 3;   // Server-assigned timestamp (HH:MM:SS)
+}
+
+// Sent by client when connecting or sending a chat
+message ClientRequest {
+  string username = 1;    // Sender's username
+  string content  = 2;    // Message to send (empty if just joining)
+}
+
+// Generic acknowledgement from server to client
+message ServerResponse {
+  string status  = 1;     // "OK" or "ERROR"
+  string message = 2;     // Human-readable response or error detail
+}
+
+// ── Service Definition ───────────────────────────────────
+
+service ChatService {
+
+  // Unary RPC: Client sends ONE message, server replies ONCE
+  // Use case: Simple request-response (e.g., "ping" → "pong")
+  rpc SendMessage (ClientRequest) returns (ServerResponse);
+
+  // Server-Streaming RPC: Client sends ONE message,
+  // server streams back MANY ChatMessage responses
+  // Use case: Client joins chat and receives message history
+  rpc JoinChat (ClientRequest) returns (stream ChatMessage);
+
+  // Bidirectional Streaming RPC: Both sides send streams of messages
+  // Use case: Real-time chat — most powerful gRPC pattern
+  rpc LiveChat (stream ClientRequest) returns (stream ChatMessage);
+}
