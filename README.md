@@ -16,6 +16,10 @@ Repository containing practical implementations and simulations for Distributed 
   - [Overview](#overview-1)
   - [Running the Election Simulator](#running-the-election-simulator)
   - [Running Unit Tests](#running-unit-tests)
+- [Assignment 3: Deadlock Detection & Resolution Algorithms](#assignment-3-deadlock-detection--resolution-algorithms)
+  - [Overview](#overview-2)
+  - [Running the Deadlock Simulator](#running-the-deadlock-simulator)
+  - [Running Unit Tests](#running-unit-tests-1)
 - [Author & License](#author--license)
 
 ---
@@ -39,12 +43,18 @@ Distributed_Systems_Assignments/
 │       ├── chat_pb2_grpc.py           # gRPC Service stubs
 │       ├── server.py                  # gRPC Server implementation
 │       └── client.py                  # gRPC Client implementation
-└── Ass2/                              # Assignment 2: Leader Election
-    ├── README.md                      # Detailed Ass2 documentation
-    ├── bully.py                       # Bully Election Algorithm engine
-    ├── ring.py                        # Ring Election Algorithm engine
-    ├── main.py                        # Interactive CLI simulator & demos
-    └── test_elections.py              # Automated unit and integration tests
+├── Ass2/                              # Assignment 2: Leader Election
+│   ├── README.md                      # Detailed Ass2 documentation
+│   ├── bully.py                       # Bully Election Algorithm engine
+│   ├── ring.py                        # Ring Election Algorithm engine
+│   ├── main.py                        # Interactive CLI simulator & demos
+│   └── test_elections.py              # Automated unit and integration tests
+└── Ass3/                              # Assignment 3: Deadlock Detection & Resolution
+    ├── README.md                      # Detailed Ass3 documentation
+    ├── wfg.py                         # Wait-For Graph, RAG, DFS 3-color cycles & resolution
+    ├── chandy_misra_haas.py           # Distributed edge-chasing probe algorithm
+    ├── main.py                        # Interactive CLI simulator & 4 automated demos
+    └── test_deadlock.py               # Unit and integration test suite
 ```
 
 ---
@@ -174,6 +184,56 @@ Or from inside `Ass2`:
 ```bash
 cd Ass2
 python -m unittest test_elections.py
+```
+
+---
+
+## Assignment 3: Deadlock Detection & Resolution Algorithms
+
+### Overview
+
+Implements deadlock detection and resolution across centralized and distributed environments:
+- **Wait-For Graph (WFG) & Resource Allocation Graph (RAG)**: Models processes and resources, collapses allocations/requests into a directed WFG, and identifies cycles using Depth-First Search with 3-state coloring (`WHITE`, `GRAY`, `BLACK`).
+- **Chandy-Misra-Haas (CMH) Algorithm**: Distributed edge-chasing probe mechanism for the AND-request model where blocked processes propagate `Probe(initiator, sender, receiver)` messages.
+- **Deadlock Resolution**: Dynamically selects victims using policies (`LOWEST_PRIORITY`, `FEWEST_RESOURCES`, `PID`), terminates victim processes, frees dependencies, and verifies that the system becomes cycle-free.
+
+### Running the Deadlock Simulator
+
+Navigate to `Ass3`:
+```bash
+cd Ass3
+python main.py
+```
+
+You will see the menu:
+```
+====================================================================
+  DISTRIBUTED SYSTEMS ASSIGNMENT 3: DEADLOCK DETECTION & RESOLUTION
+====================================================================
+1. Run Demo 1: Classic Circular WFG Deadlock (P1 -> P2 -> P3 -> P1)
+2. Run Demo 2: Resource Allocation Graph (RAG) to WFG Conversion
+3. Run Demo 3: Chandy-Misra-Haas Distributed Edge-Chasing
+4. Run Demo 4: Complex Multi-Cycle Deadlock Resolution
+5. Interactive Wait-For Graph (WFG) Simulator
+6. Interactive Chandy-Misra-Haas Distributed Simulator
+7. Exit
+```
+
+- **Options 1–4**: Run automated scenarios showcasing cycle detection, RAG-to-WFG conversion, distributed probe journeys, and multi-cycle recovery.
+- **Options 5 & 6**: Interactive sandboxes to build custom graphs, trigger probes, and test victim resolution policies.
+
+### Running Unit Tests
+
+Run the unit tests verifying cycle detection, RAG conversion, CMH probe routing, and victim resolution:
+
+From repository root:
+```bash
+python -m unittest discover -s Ass3
+```
+Or from inside `Ass3`:
+```bash
+cd Ass3
+python -m unittest test_deadlock.py
 ```
 
 ---
