@@ -1,7 +1,6 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
 *.pyo
 *.pyd
 .Python
@@ -10,19 +9,24 @@ dist/
 build/
 .eggs/
 
-# Virtual Environments
+# Virtual environments
 venv/
 .venv/
 env/
 .env/
 
-# IDE & Editors
+# IDE
 .vscode/
 .idea/
 *.sublime-project
 *.sublime-workspace
 
-# Operating System files
+# OS
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# gRPC generated stubs — regenerate with protoc
+# (keeping them committed so friend doesn't need to run protoc)
+# chat_pb2.py
+# chat_pb2_grpc.py

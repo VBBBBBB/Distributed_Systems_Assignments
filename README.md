@@ -1,294 +1,184 @@
-# Distributed Systems Assignment
-## Client–Server Program using Socket / gRPC
+# Distributed Systems Assignments
+
+Repository containing practical implementations and simulations for Distributed Systems coursework.
 
 ---
 
-## 1. Objective
+## Table of Contents
 
-Implement a simple client-server communication model using **TCP Sockets** and **gRPC** to exchange messages between distributed nodes running on separate physical machines connected over a LAN.
-
----
-
-## 2. Theory
-
-### 2.1 What is a Socket?
-
-A **socket** is a software abstraction that represents one endpoint of a two-way communication link between two programs running on a network. Sockets can use different transport protocols:
-
-| Protocol | Type | Reliability | Use Case |
-|---|---|---|---|
-| **TCP** | Stream | Reliable, ordered | Chat, file transfer |
-| **UDP** | Datagram | Unreliable, fast | Video streaming, gaming |
-
-In this assignment we use **TCP** (`SOCK_STREAM`) because message delivery must be guaranteed and ordered.
-
-#### Socket Lifecycle
-
-```
-SERVER                          CLIENT
-  │                               │
-  ├─ socket()                     ├─ socket()
-  ├─ bind(IP, PORT)               │
-  ├─ listen()                     │
-  ├─ accept()  ◄──────────────── connect()
-  │                               │
-  ├─ recv()    ◄──────────────── send(message)
-  ├─ send()   ──────────────────► recv()
-  │                               │
-  └─ close()                     └─ close()
-```
-
-### 2.2 What is gRPC?
-
-**gRPC** (Google Remote Procedure Call) is a modern, high-performance RPC framework that uses:
-- **HTTP/2** as the transport layer (multiplexed, binary, compressed)
-- **Protocol Buffers** (protobuf) as the Interface Definition Language (IDL) and serialization format
-
-It supports 4 communication patterns:
-
-| Pattern | Description | Example |
-|---|---|---|
-| **Unary** | 1 request → 1 response | REST-like API call |
-| **Server Streaming** | 1 request → N responses | Live scores, log tailing |
-| **Client Streaming** | N requests → 1 response | File upload |
-| **Bidirectional** | N requests ↔ N responses | Real-time chat |
-
-#### gRPC Architecture
-
-```
-CLIENT                          SERVER
-  │                               │
-  │  ClientRequest (protobuf)     │
-  ├──────── HTTP/2 stream ───────►│
-  │                               ├─ Deserialize
-  │                               ├─ Process
-  │                               ├─ Serialize
-  │◄──────── HTTP/2 stream ───────┤
-  │  ChatMessage (protobuf)       │
-```
-
-### 2.3 Comparison: Sockets vs gRPC
-
-| Feature | TCP Sockets | gRPC |
-|---|---|---|
-| Protocol | TCP | HTTP/2 |
-| Serialization | Raw bytes / text | Protocol Buffers |
-| API definition | None (manual) | `.proto` file (IDL) |
-| Language support | Universal | 10+ languages |
-| Streaming | Manual | Built-in |
-| Performance | Low overhead | High throughput |
-| Complexity | Low | Medium |
-| Use in industry | Legacy systems | Microservices, cloud |
+- [Repository Structure](#repository-structure)
+- [Prerequisites](#prerequisites)
+- [Assignment 1: Client–Server using TCP Sockets and gRPC](#assignment-1-clientserver-using-tcp-sockets-and-grpc)
+  - [Overview](#overview)
+  - [Running the Socket Implementation](#running-the-socket-implementation)
+  - [Running the gRPC Implementation](#running-the-grpc-implementation)
+- [Assignment 2: Distributed Leader Election (Bully & Ring)](#assignment-2-distributed-leader-election-bully--ring)
+  - [Overview](#overview-1)
+  - [Running the Election Simulator](#running-the-election-simulator)
+  - [Running Unit Tests](#running-unit-tests)
+- [Author & License](#author--license)
 
 ---
 
-## 3. System Architecture
+## Repository Structure
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                     LAN / Wi-Fi Network                 │
-│                                                         │
-│   ┌────────────────┐         ┌────────────────────┐    │
-│   │  YOUR LAPTOP   │         │  FRIEND'S LAPTOP   │    │
-│   │                │         │                    │    │
-│   │  client.py     │◄───────►│  server.py         │    │
-│   │  (Socket/gRPC) │ TCP/    │  (Socket/gRPC)     │    │
-│   └────────────────┘ HTTP2   └────────────────────┘    │
-│                                                         │
-│   IP: 192.168.x.y              IP: 192.168.x.z         │
-└─────────────────────────────────────────────────────────┘
+Distributed_Systems_Assignments/
+├── .gitignore
+├── README.md                          # Root documentation & run guide
+├── Ass1/                              # Assignment 1: Sockets and gRPC
+│   ├── .gitignore
+│   ├── README.md                      # Detailed Ass1 documentation
+│   ├── requirements.txt               # Dependencies (grpcio, protobuf)
+│   ├── socket/
+│   │   ├── server.py                  # Multi-threaded TCP Socket Server
+│   │   └── client.py                  # Interactive TCP Socket Client
+│   └── grpc/
+│       ├── chat.proto                 # gRPC Protocol Buffer Definition
+│       ├── chat_pb2.py                # Protobuf Python bindings
+│       ├── chat_pb2_grpc.py           # gRPC Service stubs
+│       ├── server.py                  # gRPC Server implementation
+│       └── client.py                  # gRPC Client implementation
+└── Ass2/                              # Assignment 2: Leader Election
+    ├── README.md                      # Detailed Ass2 documentation
+    ├── bully.py                       # Bully Election Algorithm engine
+    ├── ring.py                        # Ring Election Algorithm engine
+    ├── main.py                        # Interactive CLI simulator & demos
+    └── test_elections.py              # Automated unit and integration tests
 ```
 
 ---
 
-## 4. File Structure
+## Prerequisites
 
-```
-DSASSIGNMENTS/
-├── README.md                ← This file (assignment report)
-│
-├── socket/                  ── TCP Socket Implementation ──
-│   ├── server.py            Multi-threaded server (port 5050)
-│   └── client.py            Chat client with thread for receiving
-│
-└── grpc/                    ── gRPC Implementation ──
-    ├── chat.proto            Protocol Buffer service definition
-    ├── chat_pb2.py           Auto-generated message stubs
-    ├── chat_pb2_grpc.py      Auto-generated service stubs
-    ├── server.py             gRPC server (port 50051)
-    └── client.py             gRPC client (3 RPC mode demos)
-```
+- **Python**: Version 3.8 or higher.
+- Verify installation:
+  ```bash
+  python --version
+  ```
 
 ---
 
-## 5. How to Run
+## Assignment 1: Client–Server using TCP Sockets and gRPC
 
-### Prerequisites
+### Overview
 
-Both laptops must:
-- Be on the **same Wi-Fi network** (same router)
-- Have **Python 3.8+** installed
+Demonstrates inter-process and distributed machine communication using two paradigms:
+1. **TCP Sockets (`socket` module)**: Low-level, reliable byte stream connection handling multi-threaded client requests.
+2. **gRPC (`grpcio` + `protobuf`)**: Modern high-performance Remote Procedure Call framework utilizing Protocol Buffers and HTTP/2 transport.
 
----
+### Installation
 
-### 5.1 TCP Socket — Step by Step
-
-#### On the SERVER laptop (your friend's):
+Navigate to `Ass1` and install the required packages:
 
 ```bash
-# Navigate to the socket folder
-cd DSASSIGNMENTS/socket
+cd Ass1
+pip install -r requirements.txt
+```
 
-# Start the server
+---
+
+### Running the Socket Implementation
+
+#### 1. Start Socket Server
+In your first terminal:
+```bash
+cd Ass1/socket
 python server.py
 ```
+*Defaults to port `5000` listening on all available interfaces (`0.0.0.0`).*
 
-Expected output:
-```
-=======================================================
-  Distributed Systems — TCP Socket Server
-=======================================================
-  Listening on  : 0.0.0.0:5050
-  Max clients   : 10
-  Press Ctrl+C to stop the server.
-=======================================================
-```
-
-**Find the server's IP:** Open a new terminal and run:
-```bash
-# Windows
-ipconfig
-# Look for "IPv4 Address" under your Wi-Fi adapter
-# Example: 192.168.1.105
-```
-
-#### On the CLIENT laptop (yours):
-
-```bash
-cd DSASSIGNMENTS/socket
-python client.py
-
-# When prompted:
-#   Enter server IP address: 192.168.1.105   ← friend's IP
-```
-
-Multiple clients can connect simultaneously. Messages are broadcast to all connected users.
+#### 2. Start Socket Client
+In a second terminal:
+- **Same machine (localhost)**:
+  ```bash
+  cd Ass1/socket
+  python client.py
+  ```
+- **Across LAN / separate machine**:
+  ```bash
+  python client.py --host <SERVER_IP> --port 5000
+  ```
 
 ---
 
-### 5.2 gRPC — Step by Step
+### Running the gRPC Implementation
 
-#### Install dependencies (BOTH laptops):
-
+#### 1. Start gRPC Server
+In your first terminal:
 ```bash
-pip install grpcio grpcio-tools
+cd Ass1/grpc
+python server.py
 ```
+*Runs on port `50051`.*
 
-#### Generate Python stubs from proto (BOTH laptops):
+#### 2. Start gRPC Client
+In a second terminal:
+- **Same machine (localhost)**:
+  ```bash
+  cd Ass1/grpc
+  python client.py
+  ```
+- **Across LAN / separate machine**:
+  ```bash
+  python client.py --host <SERVER_IP> --port 50051
+  ```
 
+*(Optional) To regenerate protobuf stubs from `chat.proto`:*
 ```bash
-cd DSASSIGNMENTS/grpc
-
 python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. chat.proto
 ```
 
-This creates two files:
-- `chat_pb2.py` — Python classes for the proto messages
-- `chat_pb2_grpc.py` — Python stubs for the service
+---
 
-#### On the SERVER laptop (your friend's):
+## Assignment 2: Distributed Leader Election (Bully & Ring)
 
+### Overview
+
+Simulates coordinator/leader election in distributed networks where coordinator failures must be handled dynamically:
+- **Bully Algorithm**: Higher process IDs take priority. When a failure is detected, nodes send election messages to higher IDs; highest active node becomes the coordinator.
+- **Ring Algorithm**: Logical token/message passing along an ordered unidirectional ring ($P_0 \to P_1 \to \dots \to P_{n-1} \to P_0$). Automatically skips crashed successors.
+
+### Running the Election Simulator
+
+Navigate to `Ass2`:
 ```bash
-python server.py
+cd Ass2
+python main.py
 ```
 
-#### On the CLIENT laptop (yours):
+You will see the interactive menu:
+```
+=================================================================
+  DISTRIBUTED COORDINATOR ELECTION SIMULATOR
+=================================================================
+1. Bully Algorithm (Interactive Mode)
+2. Ring Algorithm (Interactive Mode)
+3. Run Bully Algorithm Demo
+4. Run Ring Algorithm Demo
+5. Exit
+```
 
+- **Interactive Modes (1 & 2)**: Interactively simulate node crashes, recoveries, and view detailed step-by-step message flows.
+- **Automated Demos (3 & 4)**: View pre-configured scenarios illustrating coordinator crash, election takeover, and recovery.
+
+### Running Unit Tests
+
+Run the test suite verifying election correctness, message logs, and edge cases:
+
+From repository root:
 ```bash
-python client.py
-# Enter server IP when prompted
-# Choose mode 3 (Bidirectional) for live chat
+python -m unittest discover -s Ass2
+```
+Or from inside `Ass2`:
+```bash
+cd Ass2
+python -m unittest test_elections.py
 ```
 
 ---
 
-## 6. Features Demonstrated
+## Author & License
 
-### TCP Socket
-- Multi-threaded server handles multiple clients simultaneously
-- Real-time message broadcasting to all connected clients
-- Join/Leave notifications
-- Graceful `/quit` command
-
-### gRPC
-- **Mode 1 — Unary RPC**: Send one message, receive one structured response
-- **Mode 2 — Server Streaming**: Client requests and receives full message history as a stream
-- **Mode 3 — Bidirectional Streaming**: Full real-time chat using concurrent read/write streams
-
----
-
-## 7. Key Concepts Illustrated
-
-| Concept | Where |
-|---|---|
-| Socket binding & listening | `socket/server.py` |
-| Multi-threading for concurrency | Both socket files |
-| Protocol Buffer serialization | `grpc/chat.proto` |
-| RPC method dispatch | `grpc/server.py` (ChatServicer) |
-| Generator-based streaming | `grpc/client.py` (request_generator) |
-| Thread-safe shared state | `_lock` in gRPC server |
-
----
-
-## 8. Troubleshooting
-
-| Problem | Solution |
-|---|---|
-| `ConnectionRefusedError` | Server is not running, or wrong IP/port |
-| `Port already in use` | Another process uses port 5050/50051. Kill it or change the port in both files |
-| Can't connect across laptops | Disable Windows Firewall temporarily, or add inbound rule for port 5050/50051 |
-| `ModuleNotFoundError: chat_pb2` | Run the `protoc` command to generate stubs |
-| Friend can't reach server | Make sure both are on the **same Wi-Fi** (not mobile hotspot vs home Wi-Fi) |
-
-### Open Windows Firewall port (run as Administrator):
-
-```powershell
-# For TCP Socket
-netsh advfirewall firewall add rule name="DS Assignment Socket" dir=in action=allow protocol=TCP localport=5050
-
-# For gRPC
-netsh advfirewall firewall add rule name="DS Assignment gRPC" dir=in action=allow protocol=TCP localport=50051
-```
-
----
-
-## 9. Sample Output
-
-### TCP Socket
-```
-[10:15:32] [+] New connection from 192.168.1.102:54321
-[10:15:34] 🔵 Alice joined the chat from 192.168.1.102
-[10:15:40] Alice: Hello from the other laptop!
-[10:15:45] Bob: Hey Alice! I can see your message!
-[10:15:50] 🔴 Alice left the chat.
-```
-
-### gRPC (Bidirectional)
-```
-[10:20:01] [LiveChat] Alice: [Alice joined the live chat]
-[10:20:05] [LiveChat] Alice: This is gRPC bidirectional streaming!
-[10:20:08] [LiveChat] Bob: Amazing! HTTP/2 under the hood!
-```
-
----
-
-## 10. References
-
-1. Python `socket` module docs: https://docs.python.org/3/library/socket.html
-2. gRPC Python quickstart: https://grpc.io/docs/languages/python/quickstart/
-3. Protocol Buffers guide: https://protobuf.dev/getting-started/pythontutorial/
-4. Tanenbaum, A.S. & Van Steen, M. — *Distributed Systems: Principles and Paradigms*
-
----
-
-*Assignment submitted for Distributed Systems course*
+Developed as part of Distributed Systems coursework.
+Licensed under the [MIT License](LICENSE).
